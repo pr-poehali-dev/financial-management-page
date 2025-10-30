@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import * as XLSX from 'xlsx';
 import {
@@ -68,11 +69,17 @@ const Index = () => {
   ]);
 
   const [indicators] = useState<FinancialIndicator[]>([
-    { id: 1, name: 'Расходы на образование', planned: 450000000, actual: 425000000, period: 'Q2 2024', responsible: 'Петрова М.' },
+    { id: 1, name: 'Расходы на образование', planned: 450000000, actual: 425000000, period: 'Q1 2024', responsible: 'Петрова М.' },
     { id: 2, name: 'Расходы на здравоохранение', planned: 380000000, actual: 378000000, period: 'Q2 2024', responsible: 'Сидоров П.' },
-    { id: 3, name: 'Расходы на культуру', planned: 180000000, actual: 175000000, period: 'Q2 2024', responsible: 'Иванов И.' },
+    { id: 3, name: 'Расходы на культуру', planned: 180000000, actual: 175000000, period: 'Q3 2024', responsible: 'Иванов И.' },
     { id: 4, name: 'Расходы на спорт', planned: 120000000, actual: 118000000, period: 'Q2 2024', responsible: 'Петрова М.' },
+    { id: 5, name: 'Расходы на социальную защиту', planned: 280000000, actual: 275000000, period: 'Q1 2024', responsible: 'Сидоров П.' },
+    { id: 6, name: 'Инфраструктурные проекты', planned: 320000000, actual: 310000000, period: 'Q3 2024', responsible: 'Иванов И.' },
   ]);
+
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
+  const [selectedUserRole, setSelectedUserRole] = useState<string>('all');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +104,20 @@ const Index = () => {
   const calculateExecution = (planned: number, actual: number) => {
     return ((actual / planned) * 100).toFixed(1);
   };
+
+  const periods = ['Q1 2024', 'Q2 2024', 'Q3 2024', 'Q4 2024'];
+  const departments = Array.from(new Set(users.map(u => u.department)));
+
+  const filteredIndicators = indicators.filter(indicator => {
+    const periodMatch = selectedPeriod === 'all' || indicator.period === selectedPeriod;
+    return periodMatch;
+  });
+
+  const filteredUsers = users.filter(user => {
+    const roleMatch = selectedUserRole === 'all' || user.role === selectedUserRole;
+    const deptMatch = selectedDepartment === 'all' || user.department === selectedDepartment;
+    return roleMatch && deptMatch;
+  });
 
   const exportIndicatorsToExcel = () => {
     const exportData = indicators.map(indicator => ({
@@ -347,16 +368,30 @@ const Index = () => {
           <TabsContent value="indicators" className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-4">
                   <CardTitle>Финансовые показатели</CardTitle>
-                  <div className="flex gap-2">
-                    <Button onClick={exportIndicatorsToExcel} variant="outline">
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm whitespace-nowrap">Период:</Label>
+                      <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Все периоды" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Все периоды</SelectItem>
+                          {periods.map(period => (
+                            <SelectItem key={period} value={period}>{period}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={exportIndicatorsToExcel} variant="outline" size="sm">
                       <Icon name="Download" className="h-4 w-4 mr-2" />
                       Экспорт
                     </Button>
-                    <Button>
+                    <Button size="sm">
                       <Icon name="Plus" className="h-4 w-4 mr-2" />
-                      Добавить показатель
+                      Добавить
                     </Button>
                   </div>
                 </div>
@@ -374,7 +409,7 @@ const Index = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {indicators.map((indicator) => {
+                    {filteredIndicators.map((indicator) => {
                       const execution = parseFloat(calculateExecution(indicator.planned, indicator.actual));
                       return (
                         <TableRow key={indicator.id}>
@@ -402,16 +437,44 @@ const Index = () => {
           <TabsContent value="users" className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-4">
                   <CardTitle>Управление пользователями</CardTitle>
-                  <div className="flex gap-2">
-                    <Button onClick={exportUsersToExcel} variant="outline">
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm whitespace-nowrap">Роль:</Label>
+                      <Select value={selectedUserRole} onValueChange={setSelectedUserRole}>
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Все роли" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Все роли</SelectItem>
+                          <SelectItem value="admin">Администратор</SelectItem>
+                          <SelectItem value="grbs">ГРБС</SelectItem>
+                          <SelectItem value="viewer">Наблюдатель</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm whitespace-nowrap">Подразделение:</Label>
+                      <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="Все подразделения" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Все подразделения</SelectItem>
+                          {departments.map(dept => (
+                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={exportUsersToExcel} variant="outline" size="sm">
                       <Icon name="Download" className="h-4 w-4 mr-2" />
                       Экспорт
                     </Button>
-                    <Button>
+                    <Button size="sm">
                       <Icon name="UserPlus" className="h-4 w-4 mr-2" />
-                      Добавить пользователя
+                      Добавить
                     </Button>
                   </div>
                 </div>
@@ -428,7 +491,7 @@ const Index = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
+                    {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center space-x-3">
