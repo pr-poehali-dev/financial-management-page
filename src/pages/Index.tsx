@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Icon from '@/components/ui/icon';
+import * as XLSX from 'xlsx';
 import {
   LineChart,
   Line,
@@ -95,6 +96,60 @@ const Index = () => {
 
   const calculateExecution = (planned: number, actual: number) => {
     return ((actual / planned) * 100).toFixed(1);
+  };
+
+  const exportIndicatorsToExcel = () => {
+    const exportData = indicators.map(indicator => ({
+      'Наименование': indicator.name,
+      'План (руб.)': indicator.planned,
+      'Факт (руб.)': indicator.actual,
+      'Исполнение (%)': calculateExecution(indicator.planned, indicator.actual),
+      'Период': indicator.period,
+      'Ответственный': indicator.responsible
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Финансовые показатели');
+    
+    const date = new Date().toLocaleDateString('ru-RU').replace(/\./g, '-');
+    XLSX.writeFile(wb, `Финансовые_показатели_${date}.xlsx`);
+  };
+
+  const exportUsersToExcel = () => {
+    const exportData = users.map(user => ({
+      'Имя': user.name,
+      'Email': user.email,
+      'Роль': user.role === 'admin' ? 'Администратор' : user.role === 'grbs' ? 'ГРБС' : 'Наблюдатель',
+      'Подразделение': user.department
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Пользователи');
+    
+    const date = new Date().toLocaleDateString('ru-RU').replace(/\./g, '-');
+    XLSX.writeFile(wb, `Пользователи_${date}.xlsx`);
+  };
+
+  const exportDashboardToExcel = () => {
+    const ws1 = XLSX.utils.json_to_sheet(budgetData.map(item => ({
+      'Месяц': item.month,
+      'План (млн ₽)': item.plan,
+      'Факт (млн ₽)': item.fact
+    })));
+    
+    const ws2 = XLSX.utils.json_to_sheet(departmentData.map(item => ({
+      'Направление': item.name,
+      'Бюджет (млн ₽)': item.value
+    })));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws1, 'Динамика бюджета');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Распределение');
+    
+    const date = new Date().toLocaleDateString('ru-RU').replace(/\./g, '-');
+    XLSX.writeFile(wb, `Отчет_Dashboard_${date}.xlsx`);
   };
 
   if (!isAuthenticated) {
@@ -196,6 +251,12 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
+            <div className="flex justify-end mb-4">
+              <Button onClick={exportDashboardToExcel} variant="outline">
+                <Icon name="Download" className="h-4 w-4 mr-2" />
+                Экспорт в Excel
+              </Button>
+            </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -288,10 +349,16 @@ const Index = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Финансовые показатели</CardTitle>
-                  <Button>
-                    <Icon name="Plus" className="h-4 w-4 mr-2" />
-                    Добавить показатель
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={exportIndicatorsToExcel} variant="outline">
+                      <Icon name="Download" className="h-4 w-4 mr-2" />
+                      Экспорт
+                    </Button>
+                    <Button>
+                      <Icon name="Plus" className="h-4 w-4 mr-2" />
+                      Добавить показатель
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -337,10 +404,16 @@ const Index = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Управление пользователями</CardTitle>
-                  <Button>
-                    <Icon name="UserPlus" className="h-4 w-4 mr-2" />
-                    Добавить пользователя
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={exportUsersToExcel} variant="outline">
+                      <Icon name="Download" className="h-4 w-4 mr-2" />
+                      Экспорт
+                    </Button>
+                    <Button>
+                      <Icon name="UserPlus" className="h-4 w-4 mr-2" />
+                      Добавить пользователя
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
