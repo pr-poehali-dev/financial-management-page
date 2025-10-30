@@ -38,6 +38,7 @@ interface FinancialIndicator {
   actual: number;
   period: string;
   responsible: string;
+  department: string;
 }
 
 const budgetData = [
@@ -69,15 +70,16 @@ const Index = () => {
   ]);
 
   const [indicators] = useState<FinancialIndicator[]>([
-    { id: 1, name: 'Расходы на образование', planned: 450000000, actual: 425000000, period: 'Q1 2024', responsible: 'Петрова М.' },
-    { id: 2, name: 'Расходы на здравоохранение', planned: 380000000, actual: 378000000, period: 'Q2 2024', responsible: 'Сидоров П.' },
-    { id: 3, name: 'Расходы на культуру', planned: 180000000, actual: 175000000, period: 'Q3 2024', responsible: 'Иванов И.' },
-    { id: 4, name: 'Расходы на спорт', planned: 120000000, actual: 118000000, period: 'Q2 2024', responsible: 'Петрова М.' },
-    { id: 5, name: 'Расходы на социальную защиту', planned: 280000000, actual: 275000000, period: 'Q1 2024', responsible: 'Сидоров П.' },
-    { id: 6, name: 'Инфраструктурные проекты', planned: 320000000, actual: 310000000, period: 'Q3 2024', responsible: 'Иванов И.' },
+    { id: 1, name: 'Расходы на образование', planned: 450000000, actual: 425000000, period: 'Q1 2024', responsible: 'Петрова М.', department: 'Отдел бюджетного планирования' },
+    { id: 2, name: 'Расходы на здравоохранение', planned: 380000000, actual: 378000000, period: 'Q2 2024', responsible: 'Сидоров П.', department: 'Отдел бюджетного учета' },
+    { id: 3, name: 'Расходы на культуру', planned: 180000000, actual: 175000000, period: 'Q3 2024', responsible: 'Иванов И.', department: 'Отдел казначейства' },
+    { id: 4, name: 'Расходы на спорт', planned: 120000000, actual: 118000000, period: 'Q2 2024', responsible: 'Петрова М.', department: 'Отдел бюджетного планирования' },
+    { id: 5, name: 'Расходы на социальную защиту', planned: 280000000, actual: 275000000, period: 'Q1 2024', responsible: 'Сидоров П.', department: 'Отдел бюджетного учета' },
+    { id: 6, name: 'Инфраструктурные проекты', planned: 320000000, actual: 310000000, period: 'Q3 2024', responsible: 'Иванов И.', department: 'Отдел казначейства' },
   ]);
 
   const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
+  const [selectedIndicatorDept, setSelectedIndicatorDept] = useState<string>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [selectedUserRole, setSelectedUserRole] = useState<string>('all');
 
@@ -107,10 +109,12 @@ const Index = () => {
 
   const periods = ['Q1 2024', 'Q2 2024', 'Q3 2024', 'Q4 2024'];
   const departments = Array.from(new Set(users.map(u => u.department)));
+  const indicatorDepartments = Array.from(new Set(indicators.map(i => i.department)));
 
   const filteredIndicators = indicators.filter(indicator => {
     const periodMatch = selectedPeriod === 'all' || indicator.period === selectedPeriod;
-    return periodMatch;
+    const deptMatch = selectedIndicatorDept === 'all' || indicator.department === selectedIndicatorDept;
+    return periodMatch && deptMatch;
   });
 
   const filteredUsers = users.filter(user => {
@@ -120,12 +124,13 @@ const Index = () => {
   });
 
   const exportIndicatorsToExcel = () => {
-    const exportData = indicators.map(indicator => ({
+    const exportData = filteredIndicators.map(indicator => ({
       'Наименование': indicator.name,
       'План (руб.)': indicator.planned,
       'Факт (руб.)': indicator.actual,
       'Исполнение (%)': calculateExecution(indicator.planned, indicator.actual),
       'Период': indicator.period,
+      'Отдел': indicator.department,
       'Ответственный': indicator.responsible
     }));
 
@@ -385,6 +390,20 @@ const Index = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm whitespace-nowrap">Отдел:</Label>
+                      <Select value={selectedIndicatorDept} onValueChange={setSelectedIndicatorDept}>
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Все отделы" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Все отделы</SelectItem>
+                          {indicatorDepartments.map(dept => (
+                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Button onClick={exportIndicatorsToExcel} variant="outline" size="sm">
                       <Icon name="Download" className="h-4 w-4 mr-2" />
                       Экспорт
@@ -405,6 +424,7 @@ const Index = () => {
                       <TableHead>Факт</TableHead>
                       <TableHead>Исполнение</TableHead>
                       <TableHead>Период</TableHead>
+                      <TableHead>Отдел</TableHead>
                       <TableHead>Ответственный</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -424,6 +444,7 @@ const Index = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>{indicator.period}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{indicator.department}</TableCell>
                           <TableCell>{indicator.responsible}</TableCell>
                         </TableRow>
                       );
